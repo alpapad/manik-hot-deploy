@@ -86,14 +86,13 @@ public class TargetPropertyPage extends PropertyPage {
 		groupSelectAutoDeploy.setLayout(new GridLayout(2, false));
 
 		Label helpLabel = new Label(groupSelectAutoDeploy, SWT.NONE);
-		helpLabel
-				.setText("Select the target autodeploy directory of your\napplication server to deploy your application.");
+		helpLabel.setText(
+				"Select the target autodeploy directory of your\napplication server to deploy your application.");
 
 		// add dummy label
 		new Label(groupSelectAutoDeploy, SWT.NONE).setText("");
 
-		autodeployText = new Text(groupSelectAutoDeploy, SWT.SINGLE
-				| SWT.BORDER);
+		autodeployText = new Text(groupSelectAutoDeploy, SWT.SINGLE | SWT.BORDER);
 		GridData gd = new GridData();
 		gd.widthHint = convertWidthInCharsToPixels(TEXT_FIELD_WIDTH);
 		autodeployText.setLayoutData(gd);
@@ -154,8 +153,7 @@ public class TargetPropertyPage extends PropertyPage {
 		groupSelectHotDeploy.setLayout(new GridLayout(2, false));
 
 		helpLabel = new Label(groupSelectHotDeploy, SWT.NONE);
-		helpLabel
-				.setText("Select the target hotodeploy directory from a already\ndeployed web application. ");
+		helpLabel.setText("Select the target hotodeploy directory from a already\ndeployed web application. ");
 
 		// add dummy label
 		new Label(groupSelectHotDeploy, SWT.NONE).setText("");
@@ -197,8 +195,7 @@ public class TargetPropertyPage extends PropertyPage {
 		// Populate autodeploy text field
 		try {
 			String owner = ((IResource) getElement())
-					.getPersistentProperty(new QualifiedName("",
-							AUTODEPLOY_DIR_PROPERTY));
+					.getPersistentProperty(new QualifiedName("", AUTODEPLOY_DIR_PROPERTY));
 			autodeployText.setText((owner != null) ? owner : DEFAULT_DIR);
 		} catch (CoreException e) {
 			autodeployText.setText(DEFAULT_DIR);
@@ -207,8 +204,7 @@ public class TargetPropertyPage extends PropertyPage {
 		// Populate autodeploy text field
 		try {
 			String owner = ((IResource) getElement())
-					.getPersistentProperty(new QualifiedName("",
-							HOTDEPLOY_DIR_PROPERTY));
+					.getPersistentProperty(new QualifiedName("", HOTDEPLOY_DIR_PROPERTY));
 			hotdeployText.setText((owner != null) ? owner : DEFAULT_DIR);
 		} catch (CoreException e) {
 			hotdeployText.setText(DEFAULT_DIR);
@@ -217,8 +213,7 @@ public class TargetPropertyPage extends PropertyPage {
 		// Populate checkExplodeArtifacts selection
 		try {
 			String extract = ((IResource) getElement())
-					.getPersistentProperty(new QualifiedName("",
-							EXTRACT_ARTIFACTS_PROPERTY));
+					.getPersistentProperty(new QualifiedName("", EXTRACT_ARTIFACTS_PROPERTY));
 
 			if (extract != null && "true".equals(extract))
 				checkExplodeArtifacts.setSelection(true);
@@ -231,8 +226,7 @@ public class TargetPropertyPage extends PropertyPage {
 		// Populate checkWildFlySupport selection
 		try {
 			String extract = ((IResource) getElement())
-					.getPersistentProperty(new QualifiedName("",
-							WILDFLY_SUPPORT_PROPERTY));
+					.getPersistentProperty(new QualifiedName("", WILDFLY_SUPPORT_PROPERTY));
 
 			if (extract != null && "true".equals(extract))
 				checkWildFlySupport.setSelection(true);
@@ -259,19 +253,6 @@ public class TargetPropertyPage extends PropertyPage {
 		return composite;
 	}
 
-	private Composite createDefaultComposite(Composite parent, int columns) {
-		Composite composite = new Composite(parent, SWT.NULL);
-		GridLayout layout = new GridLayout();
-		layout.numColumns = columns;
-		composite.setLayout(layout);
-
-		GridData data = new GridData();
-		data.verticalAlignment = GridData.FILL;
-		data.horizontalAlignment = GridData.FILL;
-		composite.setLayoutData(data);
-
-		return composite;
-	}
 
 	protected void performDefaults() {
 		// Populate the owner text field with the default value
@@ -286,32 +267,28 @@ public class TargetPropertyPage extends PropertyPage {
 		try {
 			String target = autodeployText.getText();
 
-			((IResource) getElement()).setPersistentProperty(new QualifiedName(
-					"", AUTODEPLOY_DIR_PROPERTY), target.trim());
+			((IResource) getElement()).setPersistentProperty(new QualifiedName("", AUTODEPLOY_DIR_PROPERTY),
+					target.trim());
 
 			target = hotdeployText.getText();
-			((IResource) getElement()).setPersistentProperty(new QualifiedName(
-					"", HOTDEPLOY_DIR_PROPERTY), target.trim());
+			((IResource) getElement()).setPersistentProperty(new QualifiedName("", HOTDEPLOY_DIR_PROPERTY),
+					target.trim());
 
 			// extractartefacts.
 			if (checkExplodeArtifacts.getSelection() == true) {
-				((IResource) getElement()).setPersistentProperty(
-						new QualifiedName("", EXTRACT_ARTIFACTS_PROPERTY),
+				((IResource) getElement()).setPersistentProperty(new QualifiedName("", EXTRACT_ARTIFACTS_PROPERTY),
 						"true");
 			} else {
-				((IResource) getElement()).setPersistentProperty(
-						new QualifiedName("", EXTRACT_ARTIFACTS_PROPERTY),
+				((IResource) getElement()).setPersistentProperty(new QualifiedName("", EXTRACT_ARTIFACTS_PROPERTY),
 						"false");
 			}
 
 			// Wildfly support.
 			if (checkWildFlySupport.getSelection() == true) {
-				((IResource) getElement())
-						.setPersistentProperty(new QualifiedName("",
-								WILDFLY_SUPPORT_PROPERTY), "true");
+				((IResource) getElement()).setPersistentProperty(new QualifiedName("", WILDFLY_SUPPORT_PROPERTY),
+						"true");
 			} else {
-				((IResource) getElement()).setPersistentProperty(
-						new QualifiedName("", WILDFLY_SUPPORT_PROPERTY),
+				((IResource) getElement()).setPersistentProperty(new QualifiedName("", WILDFLY_SUPPORT_PROPERTY),
 						"false");
 			}
 

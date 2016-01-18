@@ -57,15 +57,13 @@ public class RedeployNatureAction implements IObjectActionDelegate {
 	 */
 	public void run(IAction action) {
 		if (selection instanceof IStructuredSelection) {
-			for (Iterator<?> it = ((IStructuredSelection) selection).iterator(); it
-					.hasNext();) {
+			for (Iterator<?> it = ((IStructuredSelection) selection).iterator(); it.hasNext();) {
 				Object element = it.next();
 				IProject project = null;
 				if (element instanceof IProject) {
 					project = (IProject) element;
 				} else if (element instanceof IAdaptable) {
-					project = (IProject) ((IAdaptable) element)
-							.getAdapter(IProject.class);
+					project = (IProject) ((IAdaptable) element).getAdapter(IProject.class);
 				}
 				if (project != null) {
 					forceRedeploy(project);
@@ -105,19 +103,12 @@ public class RedeployNatureAction implements IObjectActionDelegate {
 	 */
 	private void forceRedeploy(IProject project) {
 		try {
-		
-			String target = project.getPersistentProperty(new QualifiedName("",
-					TargetPropertyPage.HOTDEPLOY_DIR_PROPERTY));
+			String target = project.getPersistentProperty(new QualifiedName("", TargetPropertyPage.HOTDEPLOY_DIR_PROPERTY));
 
-			
 			// exit if no hotdeploy folder was defined
-			if (target==null || "".equals(target.trim()))
+			if (target == null || "".equals(target.trim())){
 				return;
-			
-			// find parent folder
-			File folder = new File(target);
-
-			String sParent = folder.getParent();
+			}
 
 			File reloadFile = new File(target + "/.reload");
 			if (!reloadFile.exists())

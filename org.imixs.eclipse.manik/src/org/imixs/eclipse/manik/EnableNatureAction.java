@@ -47,15 +47,13 @@ public class EnableNatureAction implements IObjectActionDelegate {
 
 	public void run(IAction action) {
 		if (selection instanceof IStructuredSelection) {
-			for (Iterator<?> it = ((IStructuredSelection) selection).iterator(); it
-					.hasNext();) {
+			for (Iterator<?> it = ((IStructuredSelection) selection).iterator(); it.hasNext();) {
 				Object element = it.next();
 				IProject project = null;
 				if (element instanceof IProject) {
 					project = (IProject) element;
 				} else if (element instanceof IAdaptable) {
-					project = (IProject) ((IAdaptable) element)
-							.getAdapter(IProject.class);
+					project = (IProject) ((IAdaptable) element).getAdapter(IProject.class);
 				}
 				if (project != null) {
 					enableNature(project);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="org.imixs.eclipse.manik_feature"
-      label="Manik Hot Deployment"
+      label="RIT Hot Deployment"
       version="1.0.4.qualifier">
 
    <description url="https://code.google.com/p/manik-hot-deploy/">
@@ -44,7 +44,7 @@ Ralph Soika, Alexander
          id="org.imixs.eclipse.manik"
          download-size="1"
          install-size="0"
-         version="1.0.4.qualifier"
+         version="0.0.0"
          unpack="false"/>
 
 </feature>

@@ -3,7 +3,7 @@
 <plugin>
   <extension
       id="hotdeployBuilder"
-      name="Manik Builder"
+      name="RIT Builder"
       point="org.eclipse.core.resources.builders">
     <builder
         hasNature="true">
@@ -15,7 +15,7 @@
    
   <extension
       id="hotdeployNature"
-      name="Manik Nature"
+      name="RIT Nature"
       point="org.eclipse.core.resources.natures">
     <runtime>
       <run
@@ -35,12 +35,12 @@
         id="manik.actions">
       <menu
           id="org.imixs.eclipse.manik.subMenu"
-        	label=" Manik Hot Deployment"
+        	label=" RIT Hot Deployment"
         	menubarPath="additions">
         <separator name="group1"/>
       </menu>
       <action 
-          label="enable"
+          label="Enable"
           class="org.imixs.eclipse.manik.EnableNatureAction"
           menubarPath="org.imixs.eclipse.manik.subMenu/group1"
           enablesFor="+"
@@ -56,7 +56,7 @@
         </enablement>
       </action>
       <action 
-               label="disable"
+               label="Disable"
                class="org.imixs.eclipse.manik.DisableNatureAction"
                menubarPath="org.imixs.eclipse.manik.subMenu/group1"
                enablesFor="+"
@@ -73,7 +73,7 @@
          </action>
          <action 
 
-               label="redeploy..."
+               label="Redeploy..."
                class="org.imixs.eclipse.manik.RedeployNatureAction"
                menubarPath="org.imixs.eclipse.manik.subMenu/group1"
                enablesFor="+"
@@ -95,7 +95,7 @@
       <page
             class="org.imixs.eclipse.manik.TargetPropertyPage"
             id="proppage.properties.samplePropertyPage"
-            name="Manik Hot Deployment"
+            name="RIT Hot Deployment"
             adaptable="true"
             objectClass="org.eclipse.core.resources.IProject">
 	         <filter

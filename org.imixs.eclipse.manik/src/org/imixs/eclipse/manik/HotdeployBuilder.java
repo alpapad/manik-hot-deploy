@@ -40,10 +40,6 @@ import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.QualifiedName;
-import org.eclipse.ui.console.ConsolePlugin;
-import org.eclipse.ui.console.IConsole;
-import org.eclipse.ui.console.IConsoleManager;
-import org.eclipse.ui.console.MessageConsole;
 
 /**
  * The Builder Class for hot-deployment resource files
@@ -55,12 +51,10 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 
 	public static final String BUILDER_ID = "org.imixs.eclipse.manik.hotdeployBuilder";
 
-	private static String[] IGNORE_DIRECTORIES = { "/src/main/resources/",
-			"/src/main/java/", "/src/test/resources/", "/src/test/java/",
-			"/target/m2e-wtp/", "/target/maven-archiver/", "/META-INF/",
-			"/target/application.xml","/target/test-classes/","/target/classes/","/WEB-INF/classes/" };
-	private static String[] IGNORE_SUBDIRECTORIES = { "/classes/",
-			"/src/main/webapp/" };
+	private static String[] IGNORE_DIRECTORIES = { "/src/main/resources/", "/src/main/java/", "/src/test/resources/",
+			"/src/test/java/", "/target/m2e-wtp/", "/target/maven-archiver/", "/META-INF/", "/target/application.xml",
+			"/target/test-classes/", "/target/classes/", "/WEB-INF/classes/" };
+	private static String[] IGNORE_SUBDIRECTORIES = { "/classes/", "/src/main/webapp/" };
 
 	private String hotdeployTarget = "";
 	private String autodeployTarget = "";
@@ -73,8 +67,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 
 	@SuppressWarnings("rawtypes")
 	@Override
-	protected IProject[] build(int kind, Map args, IProgressMonitor monitor)
-			throws CoreException {
+	protected IProject[] build(int kind, Map args, IProgressMonitor monitor) throws CoreException {
 		Console console = new Console();
 
 		if (kind == FULL_BUILD) {
@@ -91,8 +84,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		return null;
 	}
 
-	protected void incrementalBuild(IResourceDelta delta,
-			IProgressMonitor monitor) throws CoreException {
+	protected void incrementalBuild(IResourceDelta delta, IProgressMonitor monitor) throws CoreException {
 		delta.accept(new HotdeployDeltaVisitor());
 	}
 
@@ -127,8 +119,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	void deployResource(IResource resource, int iResourceDelta)
-			throws CoreException {
+	void deployResource(IResource resource, int iResourceDelta) throws CoreException {
 
 		String targetFilePath = null;
 
@@ -156,23 +147,18 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		}
 
 		// read deployment directory settings....
-		autodeployTarget = this.getProject().getPersistentProperty(
-				new QualifiedName("",
-						TargetPropertyPage.AUTODEPLOY_DIR_PROPERTY));
+		autodeployTarget = this.getProject()
+				.getPersistentProperty(new QualifiedName("", TargetPropertyPage.AUTODEPLOY_DIR_PROPERTY));
 
 		hotdeployTarget = this.getProject()
-				.getPersistentProperty(
-						new QualifiedName("",
-								TargetPropertyPage.HOTDEPLOY_DIR_PROPERTY));
+				.getPersistentProperty(new QualifiedName("", TargetPropertyPage.HOTDEPLOY_DIR_PROPERTY));
 
-		String sTestBoolean = this.getProject().getPersistentProperty(
-				new QualifiedName("",
-						TargetPropertyPage.EXTRACT_ARTIFACTS_PROPERTY));
+		String sTestBoolean = this.getProject()
+				.getPersistentProperty(new QualifiedName("", TargetPropertyPage.EXTRACT_ARTIFACTS_PROPERTY));
 		explodeArtifact = ("true".equals(sTestBoolean));
 
-		sTestBoolean = this.getProject().getPersistentProperty(
-				new QualifiedName("",
-						TargetPropertyPage.WILDFLY_SUPPORT_PROPERTY));
+		sTestBoolean = this.getProject()
+				.getPersistentProperty(new QualifiedName("", TargetPropertyPage.WILDFLY_SUPPORT_PROPERTY));
 		wildflySupport = ("true".equals(sTestBoolean));
 
 		if ("".equals(hotdeployTarget))
@@ -183,7 +169,8 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		// check for an missing/invalid confiugration
 		if (autodeployTarget == null && hotdeployTarget == null) {
 			// no message is needed here!
-			// console.println("[ERROR]: Missing configuration. Please check your manik deployment properties for this project.");
+			// console.println("[ERROR]: Missing configuration. Please check
+			// your manik deployment properties for this project.");
 			return;
 		}
 
@@ -197,8 +184,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 				autodeployTarget += "/";
 			File targetTest = new File(autodeployTarget);
 			if (!targetTest.exists()) {
-				console.println("[ERROR]: autodeploy directory '"
-						+ autodeployTarget
+				console.println("[ERROR]: autodeploy directory '" + autodeployTarget
 						+ "' dose not exist. Please check your manik properties for this project.");
 				return;
 			}
@@ -207,8 +193,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 			if (sourceFilePath.indexOf("/target/") > -1) {
 				// in this case only root artifacts will be copied. No .war
 				// files included in a /target sub folder!
-				if (sourceFilePath.indexOf('/',
-						sourceFilePath.indexOf("/target/") + 8) > -1)
+				if (sourceFilePath.indexOf('/', sourceFilePath.indexOf("/target/") + 8) > -1)
 					return; // no op!
 
 			}
@@ -258,13 +243,10 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 			if (console != null) {
 				long lTime = System.currentTimeMillis() - lStart;
 				// log message..
-				if (sourceFileName.endsWith(".ear")
-						|| sourceFileName.endsWith(".war"))
-					console.println("[AUTODEPLOY]: " + sourceFilePath + " in "
-							+ lTime + "ms");
+				if (sourceFileName.endsWith(".ear") || sourceFileName.endsWith(".war"))
+					console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms");
 				else
-					console.println("[HOTDEPLOY]: " + sourceFilePath + " in "
-							+ lTime + "ms");
+					console.println("[HOTDEPLOY]: " + sourceFilePath + " in " + lTime + "ms");
 
 			}
 		} else {
@@ -308,8 +290,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 			}
 
 			long lTime = System.currentTimeMillis() - lStart;
-			console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime
-					+ "ms");
+			console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms");
 		}
 
 	}
@@ -325,8 +306,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 	 * @param console
 	 * @throws CoreException
 	 */
-	private void copySingelResource(IFile file, String targetFilePath,
-			Console console) throws CoreException {
+	private void copySingelResource(IFile file, String targetFilePath, Console console) throws CoreException {
 
 		// now copy / delete the file....
 		OutputStream out = null;
@@ -355,8 +335,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 				}
 			} catch (IOException e) {
 				if (console != null)
-					console.println("[ERROR]: closing stream: "
-							+ e.getMessage());
+					console.println("[ERROR]: closing stream: " + e.getMessage());
 			}
 
 		}
@@ -452,8 +431,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		for (String value : IGNORE_SUBDIRECTORIES) {
 			if (sourceFilePath.contains(value)) {
 
-				String path = sourceFilePath.substring(sourceFilePath
-						.indexOf(value) + value.length() - 0);
+				String path = sourceFilePath.substring(sourceFilePath.indexOf(value) + value.length() - 0);
 
 				// now test if the target folder is a web application and the
 				// sourcfile is a /classes/ file
@@ -464,19 +442,20 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 						// target is web app - so we need to extend the
 						// target....
 						path = "/WEB-INF/classes/" + path;
-						// console.println("Target is a web application changed target path to: "
+						// console.println("Target is a web application changed
+						// target path to: "
 						// + path);
 					}
 				}
 
 				if (path.indexOf('/') > -1) {
-					folder = new File(hotdeployTarget
-							+ path.substring(0, path.lastIndexOf('/')));
+					folder = new File(hotdeployTarget + path.substring(0, path.lastIndexOf('/')));
 					// test target folder - if not exists we did not create the
 					// path and return null...
 					if (!folder.exists()) {
 						return null;
-						// console.println("Target folder does not exist. Creating: "
+						// console.println("Target folder does not exist.
+						// Creating: "
 						// + folder.getAbsolutePath());
 						// folder.mkdirs();
 					}
@@ -489,20 +468,6 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		// console.println("Target is: " + target + sourceFilePath);
 		return hotdeployTarget + sourceFilePath;
 
-	}
-
-	private MessageConsole findConsole(String name) {
-		ConsolePlugin plugin = ConsolePlugin.getDefault();
-		IConsoleManager conMan = plugin.getConsoleManager();
-		IConsole[] existing = conMan.getConsoles();
-		for (int i = 0; i < existing.length; i++)
-			if (name.equals(existing[i].getName()))
-				return (MessageConsole) existing[i];
-		// no console found, so create a new one
-		MessageConsole myConsole = new MessageConsole(name, null);
-		conMan.addConsoles(new IConsole[] { myConsole });
-		myConsole.activate();
-		return myConsole;
 	}
 
 	class HotdeployDeltaVisitor implements IResourceDeltaVisitor {
