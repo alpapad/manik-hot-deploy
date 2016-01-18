@@ -17,11 +17,11 @@
  *  License at http://www.gnu.org/licenses/gpl.html
  *  
  *  Contributors:  
- *  	rsoika,Alexander 
+ *  	Ralph Soika 
  * 
  *******************************************************************************/
 
-package org.imixs.eclipse.manik;
+package org.imixs.eclipse.manik.actions;
 
 import java.util.Iterator;
 
@@ -34,14 +34,16 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
+import org.imixs.eclipse.manik.Console;
+import org.imixs.eclipse.manik.HotdeployNature;
 
 /**
- * Disable action to the hot deploy nature for a project
+ * Action to enable the hot deploy nature
  * 
- * @author Alexander
- *
+ * @author rsoika, Alexander
+ * 
  */
-public class DisableNatureAction implements IObjectActionDelegate {
+public class EnableNatureAction implements IObjectActionDelegate {
 
 	private ISelection selection;
 
@@ -56,7 +58,7 @@ public class DisableNatureAction implements IObjectActionDelegate {
 					project = (IProject) ((IAdaptable) element).getAdapter(IProject.class);
 				}
 				if (project != null) {
-					disableNature(project);
+					enableNature(project);
 				}
 			}
 		}
@@ -69,25 +71,34 @@ public class DisableNatureAction implements IObjectActionDelegate {
 	public void setActivePart(IAction action, IWorkbenchPart targetPart) {
 	}
 
-	private void disableNature(IProject project) {
+	/**
+	 * Toggles sample nature on a project
+	 * 
+	 * @param project
+	 *            to have sample nature added or removed
+	 */
+	private void enableNature(IProject project) {
 		Console console = new Console();
-		console.println("Disable Manik for " + project);
+		console.println("Enable for " + project.getName());
 		try {
 			IProjectDescription description = project.getDescription();
 			String[] natures = description.getNatureIds();
 
 			for (int i = 0; i < natures.length; ++i) {
 				if (HotdeployNature.NATURE_ID.equals(natures[i])) {
-					// Remove the nature
-					String[] newNatures = new String[natures.length - 1];
-					System.arraycopy(natures, 0, newNatures, 0, i);
-					System.arraycopy(natures, i + 1, newNatures, i, natures.length - i - 1);
-					description.setNatureIds(newNatures);
-					project.setDescription(description, null);
-					console.println("Disabled Manik for " + project);
+					// Nature already added.
+					console.println("Already enabled for " + project.getName());
 					return;
 				}
 			}
+			// Add the nature
+
+			String[] newNatures = new String[natures.length + 1];
+			System.arraycopy(natures, 0, newNatures, 0, natures.length);
+			newNatures[natures.length] = HotdeployNature.NATURE_ID;
+			description.setNatureIds(newNatures);
+			project.setDescription(description, null);
+			console.println("Enabled for " + project.getName());
 		} catch (CoreException e) {
 			console.println(e.getMessage());
 		}

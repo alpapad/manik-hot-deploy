@@ -39,7 +39,6 @@ import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.QualifiedName;
 
 /**
  * The Builder Class for hot-deployment resource files
@@ -57,17 +56,15 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 	private static String[] IGNORE_SUBDIRECTORIES = { "/classes/", "/src/main/webapp/" };
 
 	private String hotdeployTarget = "";
-	private String autodeployTarget = "";
-	private boolean hotDeployMode = true;
-	private boolean explodeArtifact = false;
-	private boolean wildflySupport = false;
+	// private String autodeployTarget = "";
+	// private boolean hotDeployMode = true;
+	// private boolean explodeArtifact = false;
+	// private boolean wildflySupport = false;
 	private String sourceFilePath = "";
 	private String sourceFileName = "";
-	private String sourceFilePathAbsolute = "";
 
-	@SuppressWarnings("rawtypes")
 	@Override
-	protected IProject[] build(int kind, Map args, IProgressMonitor monitor) throws CoreException {
+	protected IProject[] build(int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
 		Console console = new Console();
 
 		if (kind == FULL_BUILD) {
@@ -134,163 +131,61 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		// console.println(action + " " + file.getFullPath());
 		sourceFileName = file.getName();
 		sourceFilePath = file.getFullPath().toString();
-		sourceFilePathAbsolute = file.getRawLocation().toString();
+		//sourceFilePathAbsolute = file.getRawLocation().toString();
 
 		// we do not deploy files from the source directories
 		// skip source files like /src/main/java/*
 		for (String value : IGNORE_DIRECTORIES) {
 			if (sourceFilePath.contains(value)) {
-				// console.println("Skipping resource: " + sourceFilePath
-				// + " because it contains: " + value);
+				console.println("Skipping resource: " + sourceFilePath + " because it contains: " + value);
 				return;
 			}
 		}
+		Configuration c = TargetPropertyPage.load(this.getProject());
 
-		// read deployment directory settings....
-		autodeployTarget = this.getProject()
-				.getPersistentProperty(new QualifiedName("", TargetPropertyPage.AUTODEPLOY_DIR_PROPERTY));
-
-		hotdeployTarget = this.getProject()
-				.getPersistentProperty(new QualifiedName("", TargetPropertyPage.HOTDEPLOY_DIR_PROPERTY));
-
-		String sTestBoolean = this.getProject()
-				.getPersistentProperty(new QualifiedName("", TargetPropertyPage.EXTRACT_ARTIFACTS_PROPERTY));
-		explodeArtifact = ("true".equals(sTestBoolean));
-
-		sTestBoolean = this.getProject()
-				.getPersistentProperty(new QualifiedName("", TargetPropertyPage.WILDFLY_SUPPORT_PROPERTY));
-		wildflySupport = ("true".equals(sTestBoolean));
-
-		if ("".equals(hotdeployTarget))
-			hotdeployTarget = null;
-		if ("".equals(autodeployTarget))
-			autodeployTarget = null;
-
-		// check for an missing/invalid confiugration
-		if (autodeployTarget == null && hotdeployTarget == null) {
-			// no message is needed here!
-			// console.println("[ERROR]: Missing configuration. Please check
-			// your manik deployment properties for this project.");
+		if (c.getWildflyPath() == null || c.getWildflyPath().trim().equals("")) {
 			return;
 		}
 
-		// check if a .ear or .war file should be autodeplyed....
-		if ((sourceFileName.endsWith(".ear") || sourceFileName.endsWith(".war"))) {
-			// verify if target autodeploy folder exists!
-			if (autodeployTarget == null || autodeployTarget.isEmpty())
-				return; // no op..
-
-			if (!autodeployTarget.endsWith("/"))
-				autodeployTarget += "/";
-			File targetTest = new File(autodeployTarget);
-			if (!targetTest.exists()) {
-				console.println("[ERROR]: autodeploy directory '" + autodeployTarget
-						+ "' dose not exist. Please check your manik properties for this project.");
-				return;
-			}
-
-			// verify if sourceFileName includes a maven /target folder pattern
-			if (sourceFilePath.indexOf("/target/") > -1) {
-				// in this case only root artifacts will be copied. No .war
-				// files included in a /target sub folder!
-				if (sourceFilePath.indexOf('/', sourceFilePath.indexOf("/target/") + 8) > -1)
-					return; // no op!
-
-			}
-
-			targetFilePath = autodeployTarget + sourceFileName;
-
-			// disable hotdeploy mode!
-			hotDeployMode = false;
-
-		} else {
-			// Hotdepoyment mode!
-			if (hotdeployTarget == null)
-				// no hotdeployTarget defined
-				return;
-
-			// optimize path....
-			if (!hotdeployTarget.endsWith("/"))
-				hotdeployTarget += "/";
-
-			// compute the target path....
-			targetFilePath = computeTarget();
-
-			// enable hotdeploy mode!
-			hotDeployMode = true;
+		// Hotdepoyment mode!
+		if (hotdeployTarget == null) {
+			return;
 		}
+
+		// optimize path....
+		if (!hotdeployTarget.endsWith("/")) {
+			hotdeployTarget += "/";
+		}
+
+		// compute the target path....
+		targetFilePath = computeTarget();
+
 
 		// if the target file was not computed return....
-		if (targetFilePath == null)
+		if (targetFilePath == null) {
 			return;
+		}
 
 		if (iResourceDelta == IResourceDelta.REMOVED) {
 			// remove file
 			File f = new File(targetFilePath);
-
 			f.delete();
 			console.println("[DELETE]: " + targetFilePath);
-
 			return;
 		}
 
-		// check if Autodeploy or Hotdeploy
-		if (hotDeployMode) {
-			// HOTDEPLOY MODE
+		// HOTDEPLOY MODE
 
-			long lStart = System.currentTimeMillis();
-			copySingelResource(file, targetFilePath, console);
-			if (console != null) {
-				long lTime = System.currentTimeMillis() - lStart;
-				// log message..
-				if (sourceFileName.endsWith(".ear") || sourceFileName.endsWith(".war"))
-					console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms");
-				else
-					console.println("[HOTDEPLOY]: " + sourceFilePath + " in " + lTime + "ms");
-
-			}
-		} else {
-			// AUTODEPLOY MODE
-
-			long lStart = System.currentTimeMillis();
-			// check if a .ear or .war file should be autodeplyed in exploded
-			// format!...
-			if (!explodeArtifact) {
-				copySingelResource(file, targetFilePath, console);
-			} else {
-
-				// find extension
-				int i = sourceFilePathAbsolute.lastIndexOf(".");
-				String sDirPath = sourceFilePathAbsolute.substring(0, i) + "/";
-				try {
-					File srcFolder = new File(sDirPath);
-					File destFolder = new File(targetFilePath);
-
-					copyFolder(srcFolder, destFolder);
-				} catch (IOException e) {
-					console.println("[AUTODEPLOY]: error - " + e.getMessage());
-				}
-
-			}
-
-			// if wildfly support then tough the .deploy file
-			if (wildflySupport) {
-				try {
-					String sDeployFile = targetFilePath + ".dodeploy";
-					File deployFile = new File(sDeployFile);
-					if (!deployFile.exists())
-						new FileOutputStream(deployFile).close();
-					deployFile.setLastModified(System.currentTimeMillis());
-
-				} catch (FileNotFoundException e) {
-					console.println("[AUTODEPLOY]: error - " + e.getMessage());
-				} catch (IOException e) {
-					console.println("[AUTODEPLOY]: error - " + e.getMessage());
-				}
-			}
-
+		long lStart = System.currentTimeMillis();
+		copySingelResource(file, targetFilePath, console);
+		if (console != null) {
 			long lTime = System.currentTimeMillis() - lStart;
-			console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms");
+			// log message..
+			if (sourceFileName.endsWith(".ear") || sourceFileName.endsWith(".war"))
+				console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + targetFilePath);
+			else
+				console.println("[HOTDEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + targetFilePath);
+
 		}
 
 	}
@@ -422,8 +317,9 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 
 		// hotdeplyoment mode
 		// test if deployment is enabled
-		if (hotdeployTarget == null)
+		if (hotdeployTarget == null) {
 			return null;
+		}
 
 		/* case-2 case a and b included */
 		// test if the sourcefile contains a source path which needs to be

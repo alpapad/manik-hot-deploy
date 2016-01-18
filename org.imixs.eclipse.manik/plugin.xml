@@ -41,7 +41,7 @@
       </menu>
       <action 
           label="Enable"
-          class="org.imixs.eclipse.manik.EnableNatureAction"
+          class="org.imixs.eclipse.manik.actions.EnableNatureAction"
           menubarPath="org.imixs.eclipse.manik.subMenu/group1"
           enablesFor="+"
           id="org.imixs.eclipse.manik.enableNatureAction">
@@ -57,7 +57,7 @@
       </action>
       <action 
                label="Disable"
-               class="org.imixs.eclipse.manik.DisableNatureAction"
+               class="org.imixs.eclipse.manik.actions.DisableNatureAction"
                menubarPath="org.imixs.eclipse.manik.subMenu/group1"
                enablesFor="+"
                id="org.imixs.eclipse.manik.disableNatureAction">
@@ -74,7 +74,7 @@
          <action 
 
                label="Redeploy..."
-               class="org.imixs.eclipse.manik.RedeployNatureAction"
+               class="org.imixs.eclipse.manik.actions.RedeployNatureAction"
                menubarPath="org.imixs.eclipse.manik.subMenu/group1"
                enablesFor="+"
                id="org.imixs.eclipse.manik.redeployNatureAction">

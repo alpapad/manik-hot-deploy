@@ -17,34 +17,45 @@
  *  License at http://www.gnu.org/licenses/gpl.html
  *  
  *  Contributors:  
- *  	Ralph Soika 
+ *  	Ralph Soika ,Alexander
  * 
  *******************************************************************************/
 
-package org.imixs.eclipse.manik;
+package org.imixs.eclipse.manik.actions;
 
+import java.io.File;
 import java.util.Iterator;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
+import org.imixs.eclipse.manik.Configuration;
+import org.imixs.eclipse.manik.TargetPropertyPage;
 
 /**
- * Action to enable the hot deploy nature
+ * This action touches the .reload file to force an redeploy on glassfish server
  * 
- * @author rsoika, Alexander
+ * 
+ * http://docs.sun.com/app/docs/doc/820-4502/beadz?l=en&a=view
+ * 
+ * http://docs.sun.com/app/docs/doc/820-4502/fwakh?a=view
+ * 
+ * @author rsoika,Alexander
  * 
  */
-public class EnableNatureAction implements IObjectActionDelegate {
+public class RedeployNatureAction implements IObjectActionDelegate {
 
 	private ISelection selection;
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.eclipse.ui.IActionDelegate#run(org.eclipse.jface.action.IAction)
+	 */
 	public void run(IAction action) {
 		if (selection instanceof IStructuredSelection) {
 			for (Iterator<?> it = ((IStructuredSelection) selection).iterator(); it.hasNext();) {
@@ -56,49 +67,58 @@ public class EnableNatureAction implements IObjectActionDelegate {
 					project = (IProject) ((IAdaptable) element).getAdapter(IProject.class);
 				}
 				if (project != null) {
-					enableNature(project);
+					forceRedeploy(project);
 				}
 			}
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.eclipse.ui.IActionDelegate#selectionChanged(org.eclipse.jface.action
+	 * .IAction, org.eclipse.jface.viewers.ISelection)
+	 */
 	public void selectionChanged(IAction action, ISelection selection) {
 		this.selection = selection;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.eclipse.ui.IObjectActionDelegate#setActivePart(org.eclipse.jface.
+	 * action.IAction, org.eclipse.ui.IWorkbenchPart)
+	 */
 	public void setActivePart(IAction action, IWorkbenchPart targetPart) {
 	}
 
 	/**
-	 * Toggles sample nature on a project
+	 * touches the .reload file
+	 * 
+	 * action starts only if filter is HOTDEPLOY
 	 * 
 	 * @param project
 	 *            to have sample nature added or removed
 	 */
-	private void enableNature(IProject project) {
-		Console console = new Console();
-		console.println("Enable Manik for " + project);
+	private void forceRedeploy(IProject project) {
 		try {
-			IProjectDescription description = project.getDescription();
-			String[] natures = description.getNatureIds();
+			Configuration c = TargetPropertyPage.load(project);
+			String target = c.getWildflyPath();
 
-			for (int i = 0; i < natures.length; ++i) {
-				if (HotdeployNature.NATURE_ID.equals(natures[i])) {
-					// Nature already added.
-					console.println("Manik already enable for " + project);
-					return;
-				}
+			// exit if no hotdeploy folder was defined
+			if (target == null || "".equals(target.trim())) {
+				return;
 			}
-			// Add the nature
 
-			String[] newNatures = new String[natures.length + 1];
-			System.arraycopy(natures, 0, newNatures, 0, natures.length);
-			newNatures[natures.length] = HotdeployNature.NATURE_ID;
-			description.setNatureIds(newNatures);
-			project.setDescription(description, null);
-			console.println("Manik enabled for " + project);
-		} catch (CoreException e) {
-			console.println(e.getMessage());
+			File reloadFile = new File(target + "/.reload");
+			if (!reloadFile.exists()) {
+				reloadFile.createNewFile();
+			} else {
+				reloadFile.setLastModified(System.currentTimeMillis());
+			}
+		} catch (Exception e) {
 		}
 	}
 

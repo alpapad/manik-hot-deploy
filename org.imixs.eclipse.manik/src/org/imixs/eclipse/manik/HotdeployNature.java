@@ -60,7 +60,7 @@ public class HotdeployNature implements IProjectNature {
 		newCommands[newCommands.length - 1] = command;
 		desc.setBuildSpec(newCommands);
 		project.setDescription(desc, null);
-
+		
 	}
 
 	public void deconfigure() throws CoreException {

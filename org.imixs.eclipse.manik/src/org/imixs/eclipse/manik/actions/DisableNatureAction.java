@@ -17,44 +17,36 @@
  *  License at http://www.gnu.org/licenses/gpl.html
  *  
  *  Contributors:  
- *  	Ralph Soika ,Alexander
+ *  	rsoika,Alexander 
  * 
  *******************************************************************************/
 
-package org.imixs.eclipse.manik;
+package org.imixs.eclipse.manik.actions;
 
-import java.io.File;
 import java.util.Iterator;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
+import org.imixs.eclipse.manik.Console;
+import org.imixs.eclipse.manik.HotdeployNature;
 
 /**
- * This action touches the .reload file to force an redeploy on glassfish server
+ * Disable action to the hot deploy nature for a project
  * 
- * 
- * http://docs.sun.com/app/docs/doc/820-4502/beadz?l=en&a=view
- * 
- * http://docs.sun.com/app/docs/doc/820-4502/fwakh?a=view
- * 
- * @author rsoika,Alexander
- * 
+ * @author Alexander
+ *
  */
-public class RedeployNatureAction implements IObjectActionDelegate {
+public class DisableNatureAction implements IObjectActionDelegate {
 
 	private ISelection selection;
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.IActionDelegate#run(org.eclipse.jface.action.IAction)
-	 */
 	public void run(IAction action) {
 		if (selection instanceof IStructuredSelection) {
 			for (Iterator<?> it = ((IStructuredSelection) selection).iterator(); it.hasNext();) {
@@ -66,57 +58,40 @@ public class RedeployNatureAction implements IObjectActionDelegate {
 					project = (IProject) ((IAdaptable) element).getAdapter(IProject.class);
 				}
 				if (project != null) {
-					forceRedeploy(project);
+					disableNature(project);
 				}
 			}
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.eclipse.ui.IActionDelegate#selectionChanged(org.eclipse.jface.action
-	 * .IAction, org.eclipse.jface.viewers.ISelection)
-	 */
 	public void selectionChanged(IAction action, ISelection selection) {
 		this.selection = selection;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.eclipse.ui.IObjectActionDelegate#setActivePart(org.eclipse.jface.
-	 * action.IAction, org.eclipse.ui.IWorkbenchPart)
-	 */
 	public void setActivePart(IAction action, IWorkbenchPart targetPart) {
 	}
 
-	/**
-	 * touches the .reload file
-	 * 
-	 * action starts only if filter is HOTDEPLOY
-	 * 
-	 * @param project
-	 *            to have sample nature added or removed
-	 */
-	private void forceRedeploy(IProject project) {
+	private void disableNature(IProject project) {
+		Console console = new Console();
+		console.println("Disable for " + project.getName());
 		try {
-			String target = project.getPersistentProperty(new QualifiedName("", TargetPropertyPage.HOTDEPLOY_DIR_PROPERTY));
+			IProjectDescription description = project.getDescription();
+			String[] natures = description.getNatureIds();
 
-			// exit if no hotdeploy folder was defined
-			if (target == null || "".equals(target.trim())){
-				return;
+			for (int i = 0; i < natures.length; ++i) {
+				if (HotdeployNature.NATURE_ID.equals(natures[i])) {
+					// Remove the nature
+					String[] newNatures = new String[natures.length - 1];
+					System.arraycopy(natures, 0, newNatures, 0, i);
+					System.arraycopy(natures, i + 1, newNatures, i, natures.length - i - 1);
+					description.setNatureIds(newNatures);
+					project.setDescription(description, null);
+					console.println("Disabled for " + project.getName());
+					return;
+				}
 			}
-
-			File reloadFile = new File(target + "/.reload");
-			if (!reloadFile.exists())
-				reloadFile.createNewFile();
-			else
-				reloadFile.setLastModified(System.currentTimeMillis());
-
-		} catch (Exception e) {
+		} catch (CoreException e) {
+			console.println(e.getMessage());
 		}
 	}
 
