@@ -47,8 +47,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
 
-import com.sun.jdi.Bootstrap;
-import com.sun.jdi.VirtualMachineManager;
 /**
  * Property Page to store the target folder from the app server
  * 
@@ -86,8 +84,8 @@ public class TargetPropertyPage extends PropertyPage {
 
 	}
 
+	@SuppressWarnings("static-access")
 	private void addTargetSection(Composite parent) {
-		VirtualMachineManager manager = Bootstrap.virtualMachineManager();
 		c = this.load(((IResource) getElement()));
 		
 		/*
