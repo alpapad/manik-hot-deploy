@@ -118,4 +118,14 @@ public class HotSwapHelper {
 		// System.err.println("class file loaded.");
 		return ret;
 	}
+	
+	///home/alpapad/WORK/stash/reach-ui-framework/reach-jsf22-components/target/classes/eu/echa/reach/jsf/behavior/AttachedListStateWrapper.class
+	
+	public static void main (String[] args) throws Exception {
+		HotSwapHelper h = new HotSwapHelper();
+		h.connect("127.0.0.1", "8787");
+		
+		h.replace(new File("home/alpapad/WORK/stash/reach-ui-framework/reach-jsf22-components/target/classes/eu/echa/reach/jsf/behavior/AttachedListStateWrapper.class"), "eu.echa.reach.jsf.behavior.AttachedListStateWrapper");
+		h.disconnect();
+	}
 }

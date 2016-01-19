@@ -29,6 +29,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
@@ -38,7 +41,9 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.imixs.eclipse.manik.utils.GlobScanner;
 
 /**
  * The Builder Class for hot-deployment resource files
@@ -55,11 +60,6 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 			"/target/test-classes/", "/target/classes/", "/WEB-INF/classes/" };
 	private static String[] IGNORE_SUBDIRECTORIES = { "/classes/", "/src/main/webapp/" };
 
-	private String hotdeployTarget = "";
-	// private String autodeployTarget = "";
-	// private boolean hotDeployMode = true;
-	// private boolean explodeArtifact = false;
-	// private boolean wildflySupport = false;
 	private String sourceFilePath = "";
 	private String sourceFileName = "";
 
@@ -118,20 +118,22 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 	 */
 	void deployResource(IResource resource, int iResourceDelta) throws CoreException {
 
-		String targetFilePath = null;
+		List<String> targetFilePath = null;
 
 		// open a new console..
 		Console console = new Console();
 
 		// do not deploy directory resources!
-		if (!(resource instanceof IFile))
+		if (!(resource instanceof IFile)) {
 			return;
+		}
 
 		IFile file = (IFile) resource;
+
 		// console.println(action + " " + file.getFullPath());
 		sourceFileName = file.getName();
 		sourceFilePath = file.getFullPath().toString();
-		//sourceFilePathAbsolute = file.getRawLocation().toString();
+		// sourceFilePathAbsolute = file.getRawLocation().toString();
 
 		// we do not deploy files from the source directories
 		// skip source files like /src/main/java/*
@@ -148,46 +150,46 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		}
 
 		// Hotdepoyment mode!
-		if (hotdeployTarget == null) {
-			return;
-		}
+		// if (hotdeployTarget == null) {
+		// return;
+		// }
 
 		// optimize path....
-		if (!hotdeployTarget.endsWith("/")) {
-			hotdeployTarget += "/";
-		}
+		// if (!hotdeployTarget.endsWith("/")) {
+		// hotdeployTarget += "/";
+		// }
 
 		// compute the target path....
-		targetFilePath = computeTarget();
-
+		targetFilePath = computeTarget(c);
 
 		// if the target file was not computed return....
 		if (targetFilePath == null) {
 			return;
 		}
 
-		if (iResourceDelta == IResourceDelta.REMOVED) {
-			// remove file
-			File f = new File(targetFilePath);
-			f.delete();
-			console.println("[DELETE]: " + targetFilePath);
-			return;
+		for (String t : targetFilePath) {
+			if (iResourceDelta == IResourceDelta.REMOVED) {
+				// remove file
+				File f = new File(t);
+				f.delete();
+				console.println("[DELETE]: " + targetFilePath);
+				return;
+			}
+
+			// HOTDEPLOY MODE
+
+			long lStart = System.currentTimeMillis();
+			copySingelResource(file, t, console);
+			if (console != null) {
+				long lTime = System.currentTimeMillis() - lStart;
+				// log message..
+				if (sourceFileName.endsWith(".ear") || sourceFileName.endsWith(".war")) {
+					console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + t);
+				} else {
+					console.println("[HOTDEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + t);
+				}
+			}
 		}
-
-		// HOTDEPLOY MODE
-
-		long lStart = System.currentTimeMillis();
-		copySingelResource(file, targetFilePath, console);
-		if (console != null) {
-			long lTime = System.currentTimeMillis() - lStart;
-			// log message..
-			if (sourceFileName.endsWith(".ear") || sourceFileName.endsWith(".war"))
-				console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + targetFilePath);
-			else
-				console.println("[HOTDEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + targetFilePath);
-
-		}
-
 	}
 
 	/**
@@ -202,37 +204,18 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 	 * @throws CoreException
 	 */
 	private void copySingelResource(IFile file, String targetFilePath, Console console) throws CoreException {
-
 		// now copy / delete the file....
-		OutputStream out = null;
-		InputStream is = null;
-		try {
-			// Copy the file....
-			is = file.getContents();
-			File fOutput = new File(targetFilePath);
-			out = new FileOutputStream(fOutput);
+		File fOutput = new File(targetFilePath);
+		try (InputStream is = file.getContents(); FileOutputStream out = new FileOutputStream(fOutput)) {
+
 			byte buf[] = new byte[1024];
 			int len;
 			while ((len = is.read(buf)) > 0) {
 				out.write(buf, 0, len);
 			}
-
 		} catch (IOException ex) {
 			// unable to copy file
 			// console.println("[ERROR]: "+ex.getMessage());
-		} finally {
-			try {
-				if (out != null) {
-					out.close();
-				}
-				if (is != null) {
-					is.close();
-				}
-			} catch (IOException e) {
-				if (console != null)
-					console.println("[ERROR]: closing stream: " + e.getMessage());
-			}
-
 		}
 
 	}
@@ -248,7 +231,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 	 * @param dest
 	 * @throws IOException
 	 */
-	private static void copyFolder(File src, File dest) throws IOException {
+	protected static void copyFolder(File src, File dest) throws IOException {
 
 		if (src.isDirectory()) {
 			// if directory not exists, create it
@@ -270,19 +253,15 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		} else {
 			// if file, then copy it
 			// Use bytes stream to support all file types
-			InputStream in = new FileInputStream(src);
-			OutputStream out = new FileOutputStream(dest);
-
-			byte[] buffer = new byte[1024];
-
-			int length;
-			// copy the file content in bytes
-			while ((length = in.read(buffer)) > 0) {
-				out.write(buffer, 0, length);
+			try (InputStream in = new FileInputStream(src); OutputStream out = new FileOutputStream(dest)) {
+				byte[] buffer = new byte[1024];
+				int length;
+				// copy the file content in bytes
+				while ((length = in.read(buffer)) > 0) {
+					out.write(buffer, 0, length);
+				}
 			}
 
-			in.close();
-			out.close();
 		}
 	}
 
@@ -312,58 +291,57 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 	 * @param resource
 	 * @throws CoreException
 	 */
-	private String computeTarget() {
+	private List<String> computeTarget(Configuration c) {
 		File folder = null;
-
-		// hotdeplyoment mode
-		// test if deployment is enabled
-		if (hotdeployTarget == null) {
+		List<String> paths = new ArrayList<>();
+		if (c.getWildflyPath() == null || c.getWildflyPath().trim().length() == 0) {
 			return null;
 		}
-
-		/* case-2 case a and b included */
-		// test if the sourcefile contains a source path which needs to be
-		// removed ?
-		for (String value : IGNORE_SUBDIRECTORIES) {
-			if (sourceFilePath.contains(value)) {
-
-				String path = sourceFilePath.substring(sourceFilePath.indexOf(value) + value.length() - 0);
-
-				// now test if the target folder is a web application and the
-				// sourcfile is a /classes/ file
-				// - test for /WEB-INF/ folder
-				if (sourceFilePath.contains("/classes/")) {
-					folder = new File(hotdeployTarget + "/WEB-INF/");
-					if (folder.exists()) {
-						// target is web app - so we need to extend the
-						// target....
-						path = "/WEB-INF/classes/" + path;
-						// console.println("Target is a web application changed
-						// target path to: "
-						// + path);
-					}
-				}
-
-				if (path.indexOf('/') > -1) {
-					folder = new File(hotdeployTarget + path.substring(0, path.lastIndexOf('/')));
-					// test target folder - if not exists we did not create the
-					// path and return null...
-					if (!folder.exists()) {
-						return null;
-						// console.println("Target folder does not exist.
-						// Creating: "
-						// + folder.getAbsolutePath());
-						// folder.mkdirs();
-					}
-				}
-				// console.println("Target is: " + target + path);
-				return hotdeployTarget + path;
-
+		
+		List<String> includes = new ArrayList<>();
+		for (String t : c.getGlobs()) {
+			if (t != null && t.trim().length() > 0) {
+				includes.add(t.trim());
 			}
 		}
-		// console.println("Target is: " + target + sourceFilePath);
-		return hotdeployTarget + sourceFilePath;
+		if (includes.size() == 0) {
+			return paths;
+		}
+		String r = c.getWildflyPath().trim();
+		if (!r.endsWith("/")) {
+			r += '/';
+		}
 
+		List<String> files = new GlobScanner(new File(r), includes, Collections.emptyList(), false).matches();
+
+		for (String hotdeployTarget : files) {
+			hotdeployTarget += '/';
+			boolean added = false;
+			for (String value : IGNORE_SUBDIRECTORIES) {
+				if (sourceFilePath.contains(value)) {
+					String path = sourceFilePath.substring(sourceFilePath.indexOf(value) + value.length() - 0);
+					if (sourceFilePath.contains("/classes/")) {
+						folder = new File(hotdeployTarget + "/WEB-INF/");
+						if (folder.exists()) {
+							path = "/WEB-INF/classes/" + path;
+						}
+					}
+					if (path.indexOf('/') > -1) {
+						folder = new File(hotdeployTarget + path.substring(0, path.lastIndexOf('/')));
+						if (!folder.exists()) {
+							// return null;
+							folder.mkdirs();
+						}
+					}
+					paths.add(r + hotdeployTarget + path);
+					added = true;
+				}
+			}
+			if (!added) {
+				paths.add(r + hotdeployTarget + sourceFilePath);
+			}
+		}
+		return paths;
 	}
 
 	class HotdeployDeltaVisitor implements IResourceDeltaVisitor {
@@ -376,6 +354,10 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		 */
 		public boolean visit(IResourceDelta delta) throws CoreException {
 			IResource resource = delta.getResource();
+			IPath prp = resource.getLocation();
+			String s2 = prp.toPortableString();
+			IPath ppath = resource.getProject().getLocation();
+			String s1 = ppath.toPortableString();
 
 			// tell the method if the resource should be added removed ore
 			// changed

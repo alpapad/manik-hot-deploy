@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-class GlobScanner {
+public class GlobScanner {
 	private final File rootDir;
 	private final List<String> matches = new ArrayList<>(128);
 
@@ -265,15 +265,18 @@ class GlobScanner {
 	}
 
 	public static void main (String[] args) {
+		///home/alpapad/WORK/TESTS/industry/vfs/temp/dep0451253wrye/files002342346dsfg
 		// System.out.println(new Paths("C:\\Java\\ls", "**"));
 		List<String> includes = new ArrayList<>();
-		includes.add("website/in*");
+		
+		includes.add("industry/vfs/temp/dep*/files*");
+		includes.add("/agency/vfs/temp/dep*/files*/");
 		// includes.add("**/lavaserver/**");
 		List<String> excludes = new ArrayList<>();
 		// excludes.add("**/*.php");
 		// excludes.add("website/**/doc**");
 		long start = System.nanoTime();
-		List<String> files = new GlobScanner(new File(".."), includes, excludes, false).matches();
+		List<String> files = new GlobScanner(new File("/home/alpapad/WORK/TESTS/"), includes, excludes, false).matches();
 		long end = System.nanoTime();
 		System.out.println(files.toString().replaceAll(", ", "\n").replaceAll("[\\[\\]]", ""));
 		System.out.println((end - start) / 1000000f);
