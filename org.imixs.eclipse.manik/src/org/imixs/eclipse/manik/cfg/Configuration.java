@@ -1,4 +1,4 @@
-package org.imixs.eclipse.manik;
+package org.imixs.eclipse.manik.cfg;
 
 import java.util.ArrayList;
 import java.util.List;

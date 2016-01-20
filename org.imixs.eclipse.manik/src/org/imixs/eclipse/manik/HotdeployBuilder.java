@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -43,7 +44,9 @@ import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.imixs.eclipse.manik.cfg.Configuration;
 import org.imixs.eclipse.manik.utils.GlobScanner;
+import org.imixs.eclipse.manik.utils.HotSwapHelper;
 
 /**
  * The Builder Class for hot-deployment resource files
@@ -55,20 +58,60 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 
 	public static final String BUILDER_ID = "org.imixs.eclipse.manik.hotdeployBuilder";
 
-	private static String[] IGNORE_DIRECTORIES = { "/src/main/resources/", "/src/main/java/", "/src/test/resources/",
-			"/src/test/java/", "/target/m2e-wtp/", "/target/maven-archiver/", "/META-INF/", "/target/application.xml",
-			"/target/test-classes/", "/target/classes/", "/WEB-INF/classes/" };
+	private static String[] IGNORE_DIRECTORIES = { //
+			"/src/main/resources/", //
+			"/src/main/java/", //
+			"/src/test/resources/", //
+			"/src/test/java/", //
+			"/target/m2e-wtp/", //
+			"/target/maven-archiver/", //
+			"/META-INF/", //
+			"/target/application.xml", //
+			"/target/test-classes/", //
+			// "/target/classes/", //
+			"/WEB-INF/classes/" };
 	private static String[] IGNORE_SUBDIRECTORIES = { "/classes/", "/src/main/webapp/" };
 
 	private String sourceFilePath = "";
 	private String sourceFileName = "";
 
+	private Console console = new Console();
+	private static AtomicInteger incs = new AtomicInteger();
+
+	private HotSwapHelper helper;
+
+	public HotdeployBuilder() {
+		console.println("HotdeployBuilder: " + incs.incrementAndGet());
+		
+	}
+
+	protected void finalize() throws Throwable {
+		if (helper != null) {
+			try {
+				helper.disconnect();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			helper = null;
+		}
+	}
+	@Override
+	protected void clean(IProgressMonitor monitor) {
+		console.println("Cleaning...");
+    }
+	
 	@Override
 	protected IProject[] build(int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
-		Console console = new Console();
 
+		try {
+			doit(console);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		if (kind == FULL_BUILD) {
-			// console.println("FULL_BUILD not supported");
+			fullBuild(monitor);
 		} else {
 			IResourceDelta delta = getDelta(getProject());
 			if (delta == null) {
@@ -77,12 +120,29 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 				incrementalBuild(delta, monitor);
 			}
 		}
-
 		return null;
 	}
 
+	protected void fullBuild(IProgressMonitor monitor) throws CoreException {
+	}
+
 	protected void incrementalBuild(IResourceDelta delta, IProgressMonitor monitor) throws CoreException {
-		delta.accept(new HotdeployDeltaVisitor());
+		Configuration c = TargetPropertyPage.load(this.getProject());
+
+		if (c.getWildflyPath() == null || c.getWildflyPath().trim().equals("")) {
+			return;
+		}
+
+		delta.accept(new HotdeployDeltaVisitor(c));
+		if (helper != null) {
+			try {
+				// helper.disconnect();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			// helper = null;
+		}
 	}
 
 	/**
@@ -116,12 +176,12 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	void deployResource(IResource resource, int iResourceDelta) throws CoreException {
+	void deployResource(Configuration c, IResource resource, int iResourceDelta) throws CoreException {
 
-		List<String> targetFilePath = null;
+		List<String> targetFilePaths = null;
 
 		// open a new console..
-		Console console = new Console();
+		// Console console = new Console();
 
 		// do not deploy directory resources!
 		if (!(resource instanceof IFile)) {
@@ -143,50 +203,40 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 				return;
 			}
 		}
-		Configuration c = TargetPropertyPage.load(this.getProject());
 
 		if (c.getWildflyPath() == null || c.getWildflyPath().trim().equals("")) {
 			return;
 		}
 
-		// Hotdepoyment mode!
-		// if (hotdeployTarget == null) {
-		// return;
-		// }
-
-		// optimize path....
-		// if (!hotdeployTarget.endsWith("/")) {
-		// hotdeployTarget += "/";
-		// }
-
 		// compute the target path....
-		targetFilePath = computeTarget(c);
+		targetFilePaths = computeTarget(c);
 
 		// if the target file was not computed return....
-		if (targetFilePath == null) {
+		if (targetFilePaths == null) {
 			return;
 		}
+		console.println("[EXT]: " + file.getFileExtension() + " " + file.getType());
 
-		for (String t : targetFilePath) {
+		for (String targetFilePath : targetFilePaths) {
 			if (iResourceDelta == IResourceDelta.REMOVED) {
 				// remove file
-				File f = new File(t);
+				File f = new File(targetFilePath);
 				f.delete();
-				console.println("[DELETE]: " + targetFilePath);
+				console.println("[DELETE]: " + targetFilePaths);
 				return;
 			}
 
 			// HOTDEPLOY MODE
 
 			long lStart = System.currentTimeMillis();
-			copySingelResource(file, t, console);
+			copySingelResource(file, targetFilePath, console);
 			if (console != null) {
 				long lTime = System.currentTimeMillis() - lStart;
 				// log message..
 				if (sourceFileName.endsWith(".ear") || sourceFileName.endsWith(".war")) {
-					console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + t);
+					console.println("[AUTODEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + targetFilePath);
 				} else {
-					console.println("[HOTDEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + t);
+					console.println("[HOTDEPLOY]: " + sourceFilePath + " in " + lTime + "ms to " + targetFilePath);
 				}
 			}
 		}
@@ -297,7 +347,7 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		if (c.getWildflyPath() == null || c.getWildflyPath().trim().length() == 0) {
 			return null;
 		}
-		
+
 		List<String> includes = new ArrayList<>();
 		for (String t : c.getGlobs()) {
 			if (t != null && t.trim().length() > 0) {
@@ -307,12 +357,12 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		if (includes.size() == 0) {
 			return paths;
 		}
-		String r = c.getWildflyPath().trim();
-		if (!r.endsWith("/")) {
-			r += '/';
+		String rootPath = c.getWildflyPath().trim();
+		if (!rootPath.endsWith("/")) {
+			rootPath += '/';
 		}
 
-		List<String> files = new GlobScanner(new File(r), includes, Collections.emptyList(), false).matches();
+		List<String> files = new GlobScanner(new File(rootPath), includes, Collections.emptyList(), false).matches();
 
 		for (String hotdeployTarget : files) {
 			hotdeployTarget += '/';
@@ -333,18 +383,25 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 							folder.mkdirs();
 						}
 					}
-					paths.add(r + hotdeployTarget + path);
+					paths.add(rootPath + hotdeployTarget + path);
 					added = true;
 				}
 			}
 			if (!added) {
-				paths.add(r + hotdeployTarget + sourceFilePath);
+				paths.add(rootPath + hotdeployTarget + sourceFilePath);
 			}
 		}
 		return paths;
 	}
 
 	class HotdeployDeltaVisitor implements IResourceDeltaVisitor {
+
+		Configuration c;
+
+		public HotdeployDeltaVisitor(Configuration c) {
+			this.c = c;
+		}
+
 		/*
 		 * (non-Javadoc)
 		 * 
@@ -354,18 +411,39 @@ public class HotdeployBuilder extends IncrementalProjectBuilder {
 		 */
 		public boolean visit(IResourceDelta delta) throws CoreException {
 			IResource resource = delta.getResource();
-			IPath prp = resource.getLocation();
-			String s2 = prp.toPortableString();
-			IPath ppath = resource.getProject().getLocation();
-			String s1 = ppath.toPortableString();
 
 			// tell the method if the resource should be added removed ore
 			// changed
-			deployResource(resource, delta.getKind());
-
+			if ((resource instanceof IFile)) {
+				IPath prp = resource.getLocation();
+				String s2 = prp.toPortableString();
+				IPath ppath = resource.getProject().getLocation();
+				String s1 = ppath.toPortableString();
+				console.println("s2:" + s2 + ", s1:" + s1);
+				deployResource(c, resource, delta.getKind());
+			}
 			// return true to continue visiting children.
 			return true;
 		}
 	}
 
+	// private void replaceClass(String fname, String className){
+	//
+	// }
+
+	private void doit(Console console) throws Exception {
+		if (helper == null) {
+			helper = new HotSwapHelper(console);
+			helper.connect("127.0.0.1", "8787");
+		}
+		// HotSwapHelper h = new HotSwapHelper(console);
+
+		helper.replace(	new File("Substance.class"),"Substance");
+
+		// List<ReferenceType> classes = h.all();
+		// for (int i = 0; i < classes.size(); i++) {
+		// console.println("Class:" + classes.get(i).name());
+		// }
+
+	}
 }

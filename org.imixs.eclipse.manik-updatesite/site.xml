@@ -4,7 +4,7 @@
       This Eclipse Plugin allows hot deployment of Java EE maven archetypes into an application server.
    </description>
    <feature url="features/org.imixs.eclipse.manik_feature_1.0.4.201407040833.jar" id="org.imixs.eclipse.manik_feature" version="1.0.4.201407040833">
-      <category name="manik"/>
+      <category name="rit"/>
    </feature>
-   <category-def name="manik" label="RIT Hot Deployment"/>
+   <category-def name="rit" label="RIT Hot Deployment"/>
 </site>

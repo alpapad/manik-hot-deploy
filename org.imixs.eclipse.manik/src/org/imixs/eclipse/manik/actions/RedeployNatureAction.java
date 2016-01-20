@@ -33,8 +33,8 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
-import org.imixs.eclipse.manik.Configuration;
 import org.imixs.eclipse.manik.TargetPropertyPage;
+import org.imixs.eclipse.manik.cfg.Configuration;
 
 /**
  * This action touches the .reload file to force an redeploy on glassfish server

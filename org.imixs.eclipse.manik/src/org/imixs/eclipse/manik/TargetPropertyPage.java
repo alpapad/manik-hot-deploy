@@ -46,6 +46,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
+import org.imixs.eclipse.manik.cfg.Configuration;
 
 /**
  * Property Page to store the target folder from the app server

@@ -8,7 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.jdi.Bootstrap;
+import org.imixs.eclipse.manik.Console;
+
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
@@ -25,8 +26,11 @@ import com.sun.jdi.connect.Connector;
 public class HotSwapHelper {
 
 	private VirtualMachine vm;
-
-	public HotSwapHelper() {
+	
+	private Console console;
+	
+	public HotSwapHelper(Console console) {
+		this.console = console;
 	}
 
 	public void connect(String name) throws Exception {
@@ -41,8 +45,8 @@ public class HotSwapHelper {
 	private void connect(String host, String port, String name) throws Exception {
 		// connect to JVM
 		boolean useSocket = (port != null);
-
-		VirtualMachineManager manager = Bootstrap.virtualMachineManager();
+		
+		VirtualMachineManager manager = org.eclipse.jdi.Bootstrap.virtualMachineManager();//Bootstrap.virtualMachineManager();
 		List<AttachingConnector> connectors = manager.attachingConnectors();
 		AttachingConnector connector = null;
 		// System.err.println("Connectors available");
@@ -74,6 +78,10 @@ public class HotSwapHelper {
 			// use port if using dt_socket
 			arg = args.get("port");
 			arg.setValue(port);
+			arg = args.get("timeout");
+			if(args != null) {
+				arg.setValue("10");
+			}
 		}
 		vm = connector.attach(args);
 
@@ -81,7 +89,7 @@ public class HotSwapHelper {
 		if (!vm.canRedefineClasses()) {
 			throw new Exception("JVM doesn't support class replacement");
 		}
-
+		console.println("Connected to:" + vm.description() + " (" + vm.version() + ")");
 	}
 
 	public void replace(File classFile, String className) throws Exception {
@@ -106,8 +114,13 @@ public class HotSwapHelper {
 
 	public void disconnect() throws Exception {
 		// nuthin to do here?
+		vm.dispose();
 	}
 
+	public List<ReferenceType>  all(){
+		return vm.allClasses();
+	}
+	
 	private byte[] loadClassFile(File classFile) throws IOException {
 		DataInputStream in = new DataInputStream(new FileInputStream(classFile));
 
@@ -118,14 +131,5 @@ public class HotSwapHelper {
 		// System.err.println("class file loaded.");
 		return ret;
 	}
-	
-	///home/alpapad/WORK/stash/reach-ui-framework/reach-jsf22-components/target/classes/eu/echa/reach/jsf/behavior/AttachedListStateWrapper.class
-	
-	public static void main (String[] args) throws Exception {
-		HotSwapHelper h = new HotSwapHelper();
-		h.connect("127.0.0.1", "8787");
-		
-		h.replace(new File("home/alpapad/WORK/stash/reach-ui-framework/reach-jsf22-components/target/classes/eu/echa/reach/jsf/behavior/AttachedListStateWrapper.class"), "eu.echa.reach.jsf.behavior.AttachedListStateWrapper");
-		h.disconnect();
-	}
+
 }

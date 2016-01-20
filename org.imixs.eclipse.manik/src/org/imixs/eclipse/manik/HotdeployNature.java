@@ -22,6 +22,9 @@
  *******************************************************************************/
 package org.imixs.eclipse.manik;
 
+import java.util.Collections;
+import java.util.UUID;
+
 import org.eclipse.core.resources.ICommand;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -57,6 +60,7 @@ public class HotdeployNature implements IProjectNature {
 		System.arraycopy(commands, 0, newCommands, 0, commands.length);
 		ICommand command = desc.newCommand();
 		command.setBuilderName(HotdeployBuilder.BUILDER_ID);
+		command.setArguments(Collections.singletonMap("BID_KEY", UUID.randomUUID().toString()));
 		newCommands[newCommands.length - 1] = command;
 		desc.setBuildSpec(newCommands);
 		project.setDescription(desc, null);
@@ -68,6 +72,7 @@ public class HotdeployNature implements IProjectNature {
 		ICommand[] commands = description.getBuildSpec();
 		for (int i = 0; i < commands.length; ++i) {
 			if (commands[i].getBuilderName().equals(HotdeployBuilder.BUILDER_ID)) {
+				System.err.println(commands[i].getArguments());
 				ICommand[] newCommands = new ICommand[commands.length - 1];
 				System.arraycopy(commands, 0, newCommands, 0, i);
 				System.arraycopy(commands, i + 1, newCommands, i, commands.length - i - 1);
